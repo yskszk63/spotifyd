@@ -25,6 +25,7 @@ use rspotify::spotify::{
 };
 use tokio_core::reactor::Handle;
 
+use dbus::tree::EmitsChangedSignal;
 use std::{collections::HashMap, rc::Rc, thread};
 
 pub struct DbusServer {
@@ -426,6 +427,7 @@ fn create_dbus_server(
     let property_metadata = f
         .property::<HashMap<String, Variant<Box<dyn RefArg>>>, _>("Metadata", ())
         .access(Access::Read)
+        .emits_changed(EmitsChangedSignal::True)
         .on_get(spotify_api_property!([sp, _device] {
             let mut m = HashMap::new();
             let v = sp.current_user_playing_track();
