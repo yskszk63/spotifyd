@@ -424,11 +424,7 @@ fn create_dbus_server(
             }
         ));
 
-    let property_metadata = f
-        .property::<HashMap<String, Variant<Box<dyn RefArg>>>, _>("Metadata", ())
-        .access(Access::Read)
-        .emits_changed(EmitsChangedSignal::True)
-        .on_get(spotify_api_property!([sp, _device] {
+    let handler = spotify_api_property!([sp, _device] {
             let mut m = HashMap::new();
             let v = sp.current_user_playing_track();
 
@@ -506,7 +502,16 @@ fn create_dbus_server(
             }
 
             m
-        }));
+        });
+
+    let mut change = Vec::new();
+
+    let property_metadata = f
+        .property::<HashMap<String, Variant<Box<dyn RefArg>>>, _>("Metadata", ())
+        .access(Access::Read)
+        .emits_changed(EmitsChangedSignal::True)
+        .add_propertieschanged(&mut change, media_player2_player_interface.get_name(), handler)
+        .on_get(handler);
 
     let property_can_play = f
         .property::<bool, _>("CanPlay", ())
