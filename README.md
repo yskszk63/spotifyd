@@ -1,5 +1,5 @@
 # Spotifyd <!-- omit in toc -->
-![Cargo Downloads](https://img.shields.io/crates/d/spotifyd)
+[![Cargo Downloads](https://img.shields.io/crates/d/spotifyd)](https://crates.io/crates/spotifyd)
 [![Dependabot Status][dependabot-badge]](https://dependabot.com)
 [![Github Actions - CD][cd-badge]][github-actions]
 [![Github Actions - CI][ci-badge]][github-actions]
@@ -194,6 +194,13 @@ password_cmd = "command_that_writes_password_to_stdout"
 # This is an alternative to the `password` field. Both
 # can't be used simultaneously.
 use_keyring = true
+
+#
+# If set to true, `spotifyd` tries to bind to the session dbus
+# and expose MPRIS controls. When running headless, without a dbus session,
+# then set this to false to avoid binding errors
+#
+use_mpris = true
 
 # The audio backend used to play the your music. To get
 # a list of possible backends, run `spotifyd --help`.
