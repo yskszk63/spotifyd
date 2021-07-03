@@ -119,7 +119,20 @@ pub(crate) fn initial_state(
         }
     }
 
-    let connection = if let Some(credentials) = get_credentials(
+    let oauth2_client_id = config.oauth2_client_id;
+    let oauth2_redirect_url = config.oauth2_redirect_url;
+    let connection = if let (Some(oauth2_client_id), Some(oauth2_redirect_url)) =
+        (oauth2_client_id, oauth2_redirect_url)
+    {
+        let credentials =
+            crate::oauth2::get_credentials(&oauth2_client_id, &oauth2_redirect_url).unwrap();
+        Session::connect(
+            session_config.clone(),
+            credentials,
+            cache.clone(),
+            handle.clone(),
+        )
+    } else if let Some(credentials) = get_credentials(
         username,
         password,
         cache.as_ref().and_then(Cache::credentials),

@@ -248,6 +248,14 @@ pub struct CliConfig {
 // The actual config file is made up of two sections, spotifyd and global.
 #[derive(Clone, Default, Deserialize, PartialEq, StructOpt)]
 pub struct SharedConfigValues {
+    /// The Spotify oauth2 application client id
+    #[structopt(conflicts_with = "username", long, value_name = "string")]
+    oauth2_client_id: Option<String>,
+
+    /// The Spotify oauth2 application redirect url
+    #[structopt(conflicts_with = "username", long, value_name = "string")]
+    oauth2_redirect_url: Option<String>,
+
     /// The Spotify account user name
     #[structopt(conflicts_with = "username_cmd", long, short, value_name = "string")]
     username: Option<String>,
@@ -430,6 +438,8 @@ impl fmt::Debug for SharedConfigValues {
         let username_cmd_value = extract_credential!(&self.username_cmd);
 
         f.debug_struct("SharedConfigValues")
+            .field("oauth2_client_id", &self.oauth2_client_id)
+            .field("oauth2_redirect_url", &self.oauth2_redirect_url)
             .field("username", &username_value)
             .field("username_cmd", &username_cmd_value)
             .field("password", &password_value)
@@ -496,6 +506,8 @@ impl SharedConfigValues {
 
         // Handles Option<T> merging.
         merge!(
+            oauth2_client_id,
+            oauth2_redirect_url,
             backend,
             username,
             username_cmd,
@@ -543,6 +555,8 @@ fn device_id(name: &str) -> String {
 }
 
 pub(crate) struct SpotifydConfig {
+    pub(crate) oauth2_client_id: Option<String>,
+    pub(crate) oauth2_redirect_url: Option<String>,
     pub(crate) username: Option<String>,
     pub(crate) password: Option<String>,
     #[allow(unused)]
@@ -638,8 +652,19 @@ pub(crate) fn get_internal_config(config: CliConfig) -> SpotifydConfig {
         "sh".to_string()
     });
 
+    let mut oauth2_client_id = config.shared_config.oauth2_client_id;
+    let mut oauth2_redirect_url = config.shared_config.oauth2_redirect_url;
+    if oauth2_client_id.is_some() && oauth2_redirect_url.is_none() {
+        info!("No oauth2_redirect_url specified");
+        oauth2_client_id = None;
+    }
+    if oauth2_client_id.is_none() && oauth2_redirect_url.is_some() {
+        info!("No oauth2_client_id specified");
+        oauth2_redirect_url = None;
+    }
+
     let mut username = config.shared_config.username;
-    if username.is_none() {
+    if oauth2_client_id.is_none() && username.is_none() {
         info!("No username specified. Checking username_cmd");
         match config.shared_config.username_cmd {
             Some(ref cmd) => match run_program(&shell, cmd) {
@@ -651,7 +676,7 @@ pub(crate) fn get_internal_config(config: CliConfig) -> SpotifydConfig {
     }
 
     let mut password = config.shared_config.password;
-    if password.is_none() {
+    if oauth2_redirect_url.is_none() && password.is_none() {
         info!("No password specified. Checking password_cmd");
 
         match config.shared_config.password_cmd {
@@ -677,6 +702,8 @@ pub(crate) fn get_internal_config(config: CliConfig) -> SpotifydConfig {
         None => info!("No proxy specified"),
     }
     SpotifydConfig {
+        oauth2_client_id,
+        oauth2_redirect_url,
         username,
         password,
         use_keyring: config.shared_config.use_keyring,

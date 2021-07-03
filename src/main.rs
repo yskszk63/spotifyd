@@ -15,6 +15,7 @@ mod config;
 mod dbus_mpris;
 mod error;
 mod main_loop;
+mod oauth2;
 mod process;
 mod setup;
 mod utils;
